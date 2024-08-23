@@ -25,6 +25,7 @@ import SiopOpenID4VP
 import JOSESwift
 import Logging
 import X509
+import WalletStorage
 /// Implements remote attestation presentation to online verifier
 
 /// Implementation is based on the OpenID4VP – Draft 18 specification
@@ -48,9 +49,10 @@ public class OpenId4VpService: PresentationService {
 	var mdocGeneratedNonce: String!
 	var sessionTranscript: SessionTranscript!
 	var eReaderPub: CoseKey?
+    var storageService: any DataStorageService
 	public var flow: FlowType
 
-	public init(parameters: [String: Any], qrCode: Data, openId4VpVerifierApiUri: String?, openId4VpVerifierLegalName: String?) throws {
+	public init(parameters: [String: Any], qrCode: Data, openId4VpVerifierApiUri: String?, openId4VpVerifierLegalName: String?, _ storageService: any DataStorageService) throws {
 		self.flow = .openid4vp(qrCode: qrCode)
 		guard let (docs, devicePrivateKeys, iaca, dauthMethod) = MdocHelpers.initializeData(parameters: parameters) else {
 			throw PresentationSession.makeError(str: "MDOC_DATA_NOT_AVAILABLE")
@@ -62,6 +64,7 @@ public class OpenId4VpService: PresentationService {
 		self.openid4VPlink = openid4VPlink
 		self.openId4VpVerifierApiUri = openId4VpVerifierApiUri
 		self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
+        self.storageService = storageService
 	}
 	
 	public func startQrEngagement() async throws -> String? { nil }
@@ -132,9 +135,13 @@ public class OpenId4VpService: PresentationService {
 		let response = try AuthorizationResponse(resolvedRequest: resolved, consent: consent, walletOpenId4VPConfig: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
 		let result: DispatchOutcome = try await siopOpenId4Vp.dispatch(response: response)
 		if case let .accepted(url) = result {
+            let log = PresentationLog(verifierName: self.openId4VpVerifierLegalName, verifierURL: self.openId4VpVerifierApiUri, submitAt: Date(), isSuccess: true, consent: consent)
+            try self.storageService.savePresentationLog(log: log, dataToSaveType: .log)
 			logger.info("Dispatch accepted, return url: \(url?.absoluteString ?? "")")
 			onSuccess?(url)
 		} else if case let .rejected(reason) = result {
+            let log = PresentationLog(verifierName: self.openId4VpVerifierLegalName, verifierURL: self.openId4VpVerifierApiUri, submitAt: Date(), isSuccess: false, consent: consent)
+            try self.storageService.savePresentationLog(log: log, dataToSaveType: .log)
 			logger.info("Dispatch rejected, reason: \(reason)")
 			throw PresentationSession.makeError(str: reason)
 		}
