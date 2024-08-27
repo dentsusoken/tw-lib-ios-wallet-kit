@@ -109,6 +109,7 @@ public final class EudiWallet: ObservableObject {
 		}
 		guard let docTypeToSave else { throw WalletError(description: "Unknown document type") }
 		guard let dataToSave else { throw WalletError(description: "Issued data cannot be recognized") }
+        logger.info("Successfully verified data : \(docTypeToSave)")
 		var issued: WalletStorage.Document
 		if !openId4VCIService.usedSecureEnclave {
 			issued = WalletStorage.Document(id: id, docType: docTypeToSave, docDataType: ddt, data: dataToSave, privateKeyType: .x963EncodedP256, privateKey: issueReq.keyData, createdAt: Date())
@@ -116,6 +117,7 @@ public final class EudiWallet: ObservableObject {
 			issued = WalletStorage.Document(id: id, docType: docTypeToSave, docDataType: ddt, data: dataToSave, privateKeyType: .secureEnclaveP256, privateKey: issueReq.keyData, createdAt: Date())
 		}
 		try issueReq.saveToStorage(storage.storageService)
+        logger.info("Successfully saved data : \(issued)")
 		try endIssueDocument(issued)
 		await storage.appendDocModel(issued)
 		await storage.refreshPublishedVars()
