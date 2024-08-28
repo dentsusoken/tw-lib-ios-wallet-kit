@@ -102,7 +102,18 @@ public class StorageManager: ObservableObject {
 			throw error
 		}
 	}
-	
+
+  @discardableResult public func loadVPDocuments() async throws -> [PresentationLog]?  {
+    do {
+      guard let presentationLogs: [PresentationLog] = try storageService.loadPresentationLog() else { return nil }
+      await refreshPublishedVars()
+      return presentationLogs
+    } catch {
+      await setError(error)
+      throw error
+    }
+  }
+
 	func getTypedDoc<T>(of: T.Type = T.self) -> T? where T: MdocDecodable {
 		mdocModels.first(where: { type(of: $0) == of}) as? T
 	}
