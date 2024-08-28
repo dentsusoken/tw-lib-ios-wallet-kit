@@ -28,8 +28,11 @@ public class StorageManager: ObservableObject {
 	public var docTypes: [String] { mdocModels.map(\.docType) }
 	/// Array of document models loaded in the wallet
 	@Published public var mdocModels: [any MdocDecodable] = []
+  @Published public var vpModels: [PresentationLog] = []
 	/// Array of document identifiers loaded in the wallet
 	public var documentIds: [String] { mdocModels.map(\.id) }
+//  public var VPIds: [String] { vpModels.map(\.id) }
+  public var VPIds: [String] { vpModels.map(\.id) }
 	var storageService: any DataStorageService
 	/// Whether wallet currently has loaded data
 	@Published public var hasData: Bool = false
@@ -130,14 +133,31 @@ public class StorageManager: ObservableObject {
 		return mdocModels[index]
 	}
 	
+  public func getVPHistoryModel(index: Int) -> (any MdocDecodable)? {
+    guard index < mdocModels.count else { return nil }
+    return mdocModels[index]
+  }
+
 	/// Get document model by id
 	/// - Parameter id: The id of the document model to return
 	/// - Returns: The ``MdocDecodable`` model
 	public func getDocumentModel(id: String) ->  (any MdocDecodable)? {
-		guard let i = documentIds.firstIndex(of: id)  else { return nil }
+		guard let i = documentIds.firstIndex(of: id)  else { 
+      print("return nil") 
+      return nil }
+    print(getDocumentModel(index: i))
 		return getDocumentModel(index: i)
 	}
-	
+
+  public func getVPHistoryModel(id: String) ->  (any MdocDecodable)? {
+    print(id)
+    guard let i = VPIds.firstIndex(of: id)  else {
+      print("return nil")
+      return nil
+    }
+    print(getVPHistoryModel(index: i))
+    return getVPHistoryModel(index: i)
+  }
 	/// Get document model by docType
 	/// - Parameter docType: The docType of the document model to return
 	/// - Returns: The ``MdocDecodable`` model
