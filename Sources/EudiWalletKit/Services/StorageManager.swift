@@ -27,11 +27,16 @@ public class StorageManager: ObservableObject {
 	/// Array of doc.types of documents loaded in the wallet
 	public var docTypes: [String] { mdocModels.map(\.docType) }
 	/// Array of document models loaded in the wallet
-	@Published public var mdocModels: [any MdocDecodable] = []
-  @Published public var vpModels: [PresentationLog] = []
+  @Published public var mdocModels: [any MdocDecodable] = []
+	@Published public var mdocVPModels: [PresentationLog] = []
 	/// Array of document identifiers loaded in the wallet
+	/// Array of document identifiers loaded in the wallet
+  ///   @Published public var mdocModels: [any MdocDecodable] = []
+//  @Published public var vpHistoryModels: [PresentationLog] = []
+  @Published public var vpHistoryModels: [any MdocDecodable] = []
+  @Published public var vpModels: [PresentationLog] = []
+//    @Published public var vpModels: [any MdocDecodable] = []
 	public var documentIds: [String] { mdocModels.map(\.id) }
-//  public var VPIds: [String] { vpModels.map(\.id) }
   public var VPIds: [String] { vpModels.map(\.id) }
 	var storageService: any DataStorageService
 	/// Whether wallet currently has loaded data
@@ -67,9 +72,18 @@ public class StorageManager: ObservableObject {
 	
 	@MainActor
 	fileprivate func refreshDocModels(_ docs: [WalletStorage.Document]) {
+    print(mdocModels)
 		mdocModels = docs.compactMap(toModel(doc:))
+    print(mdocModels)
 	}
 	
+  fileprivate func refreshVPModels(_ docs: [PresentationLog]) {
+    print(mdocVPModels)
+    mdocVPModels = docs.compactMap(toVPModel(doc:))
+    print("mdocVPModels")
+    print(mdocVPModels)
+  }
+
 	@MainActor
 	@discardableResult func appendDocModel(_ doc: WalletStorage.Document) -> (any MdocDecodable)? {
 		let mdoc: (any MdocDecodable)? = toModel(doc: doc)
@@ -86,6 +100,23 @@ public class StorageManager: ObservableObject {
 		}
 	}
 	
+  func toVPModel(doc: PresentationLog) -> (PresentationLog)? {
+    guard let (issuerNameSpaces) = doc.decodeVPToken() else {
+      return nil
+    }
+//    return switch doc.docType {
+//    case EuPidModel.euPidDocType: EuPidModel(id: iss.0, createdAt: doc.createdAt, issuerSigned: iss.1, devicePrivateKey: dpk.1)!
+//    case IsoMdlModel.isoDocType: IsoMdlModel(id: iss.0, createdAt: doc.createdAt, issuerSigned: iss.1, devicePrivateKey: dpk.1)!
+//    default: GenericMdocModel(id: iss.0, createdAt: doc.createdAt, issuerSigned: iss.1, devicePrivateKey: dpk.1, docType: doc.docType, title: doc.docType.translated())
+//    }
+    print("issuerNameSpaces")
+
+    print(issuerNameSpaces)
+    print("doc")
+    print(doc)
+    return doc
+  }
+
 	public func getDocIdsToTypes() -> [String: String] {
 		Dictionary(uniqueKeysWithValues: mdocModels.map { m in (m.id, m.docType) })
 	}
@@ -109,6 +140,7 @@ public class StorageManager: ObservableObject {
   @discardableResult public func loadVPDocuments() async throws -> [PresentationLog]?  {
     do {
       guard let presentationLogs: [PresentationLog] = try storageService.loadPresentationLog() else { return nil }
+      await refreshVPModels(presentationLogs)
       await refreshPublishedVars()
       return presentationLogs
     } catch {
@@ -130,28 +162,45 @@ public class StorageManager: ObservableObject {
 	/// - Returns: The ``MdocDecodable`` model
 	public func getDocumentModel(index: Int) -> (any MdocDecodable)? {
 		guard index < mdocModels.count else { return nil }
-		return mdocModels[index]
-	}
-	
-  public func getVPHistoryModel(index: Int) -> (any MdocDecodable)? {
-    guard index < mdocModels.count else { return nil }
+    print("#################################")
+//    print(mdocModels[index])
+    print(index)
     return mdocModels[index]
-  }
+	}
 
 	/// Get document model by id
 	/// - Parameter id: The id of the document model to return
 	/// - Returns: The ``MdocDecodable`` model
 	public func getDocumentModel(id: String) ->  (any MdocDecodable)? {
-		guard let i = documentIds.firstIndex(of: id)  else { 
+    print(id)
+    print("documentIds")
+    print(documentIds)
+    print("mdocModels")
+    print(mdocModels)
+
+		guard let i = documentIds.firstIndex(of: id)  else {
       print("return nil") 
       return nil }
-    print(getDocumentModel(index: i))
+    print(i)
+    print(getDocumentModel(index: i) as Any)
 		return getDocumentModel(index: i)
 	}
 
+  public func getVPHistoryModel(index: Int) -> (any MdocDecodable)? {
+//  public func getVPHistoryModel(index: Int) -> (PresentationLog)? {
+    guard index < vpHistoryModels.count else { return nil }
+    return vpHistoryModels[index]
+  }
+
   public func getVPHistoryModel(id: String) ->  (any MdocDecodable)? {
+//  public func getVPHistoryModel(id: String) ->  (PresentationLog)? {
     print(id)
+    print("VPIds")
+    print(VPIds)
+    print("vpModels")
+    print(vpModels)
     guard let i = VPIds.firstIndex(of: id)  else {
+      print("==================")
       print("return nil")
       return nil
     }
