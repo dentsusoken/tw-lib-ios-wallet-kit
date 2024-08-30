@@ -137,11 +137,13 @@ public class OpenId4VpService: PresentationService {
 		if case let .accepted(url) = result {
             let log = PresentationLog(verifierName: self.openId4VpVerifierLegalName, verifierURL: self.openId4VpVerifierApiUri, submitAt: Date(), isSuccess: true, consent: consent)
             try self.storageService.savePresentationLog(log: log, dataToSaveType: .log)
+            logger.info("Successfully saved presentation log data")
 			logger.info("Dispatch accepted, return url: \(url?.absoluteString ?? "")")
 			onSuccess?(url)
 		} else if case let .rejected(reason) = result {
             let log = PresentationLog(verifierName: self.openId4VpVerifierLegalName, verifierURL: self.openId4VpVerifierApiUri, submitAt: Date(), isSuccess: false, consent: consent)
             try self.storageService.savePresentationLog(log: log, dataToSaveType: .log)
+            logger.info("Successfully saved presentation log data")
 			logger.info("Dispatch rejected, reason: \(reason)")
 			throw PresentationSession.makeError(str: reason)
 		}
