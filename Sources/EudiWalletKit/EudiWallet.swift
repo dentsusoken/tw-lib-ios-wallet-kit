@@ -182,6 +182,11 @@ public final class EudiWallet: ObservableObject {
 		return try await storage.loadDocuments()
 	}
 
+  @discardableResult public func loadVPDocuments() async throws -> [WalletStorage.PresentationLog]? {
+    // return try await storage.loadVPDocuments()
+    let documents: [WalletStorage.PresentationLog]? = try await storage.loadVPDocuments()
+    return documents
+  }
 	/// Delete all documents from storage
 	///
 	/// Calls ``storage`` loadDocuments
