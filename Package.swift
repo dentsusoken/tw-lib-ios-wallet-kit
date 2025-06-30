@@ -15,10 +15,10 @@ let package = Package(
     dependencies: [
 		.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
-        .package(url: "https://github.com/dentsusoken/tw-lib-ios-iso18013-data-transfer.git", branch: "feat-UnifiedID"),
-        .package(url: "https://github.com/dentsusoken/tw-lib-ios-wallet-storage.git", branch: "feat-UnifiedID"),
+        .package(url: "https://github.com/dentsusoken/tw-lib-ios-iso18013-data-transfer.git", branch: "main"),
+        .package(url: "https://github.com/dentsusoken/tw-lib-ios-wallet-storage.git", branch: "main"),
 		.package(url: "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-siop-openid4vp-swift.git", exact: "0.1.1"),
-        .package(url: "https://github.com/dentsusoken/tw-lib-ios-openid4vci-swift.git", branch: "feat-UnifiedID"),
+        .package(url: "https://github.com/dentsusoken/tw-lib-ios-openid4vci-swift.git", branch: "main"),
 	],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
