@@ -68,7 +68,20 @@ public class OpenId4VpService: PresentationService {
 	}
 	
 	public func startQrEngagement() async throws -> String? { nil }
-	
+
+	// ToDo: This is implementation for temporarily test
+	public func getResolvedRequestData() async throws -> [String: Any] {
+		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") }
+		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
+		switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
+		case let .jwt(request: resolvedRequestData):
+			print("JWT: \(resolvedRequestData)") // Todo: temporarily
+		case .notSecured(data: _):
+			print("Not secured") // Todo: temporarily
+		}
+		return try resolvedRequestData.debugDescription.toDictionary()
+  }
+  
 	///  Receive request from an openid4vp URL
 	///
 	/// - Returns: The requested items.
