@@ -238,18 +238,19 @@ public final class EudiWallet: ObservableObject {
 		return parameters
 	}
 	// ToDo: Note: As a reference, use the method name resolveOfferUrlDocTypes which is for issuance
-	public func resolveRequestDocType(flow: FlowType) async {
+	public func resolveRequestDocType(flow: FlowType) async -> String? {
 		do {
 			switch flow {
 			case .openid4vp(let qrCode):
 				let openIdSvc = try OpenId4VpService(parameters: [:], qrCode: qrCode, openId4VpVerifierApiUri: self.verifierApiUri, openId4VpVerifierLegalName: self.verifierLegalName,self.storage.storageService)
 				var result = try await openIdSvc.getResolvedRequestData()
-				print(result) // Todo: temporarily
+				return result
 			default:
-				print(flow) // Todo: temporarily
+				return nil
 			}
 		} catch {
-			print(error) // Todo: temporarily
+			print(error)
+			return nil
 		}
 	}
 	

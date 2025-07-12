@@ -54,39 +54,66 @@ public class OpenId4VpService: PresentationService {
 
 	public init(parameters: [String: Any], qrCode: Data, openId4VpVerifierApiUri: String?, openId4VpVerifierLegalName: String?, _ storageService: any DataStorageService) throws {
 		self.flow = .openid4vp(qrCode: qrCode)
-		guard let (docs, devicePrivateKeys, iaca, dauthMethod) = MdocHelpers.initializeData(parameters: parameters) else {
-			throw PresentationSession.makeError(str: "MDOC_DATA_NOT_AVAILABLE")
+		if !parameters.isEmpty{
+			guard let (docs, devicePrivateKeys, iaca, dauthMethod) = MdocHelpers.initializeData(parameters: parameters) else {
+				throw PresentationSession.makeError(str: "MDOC_DATA_NOT_AVAILABLE")
+			}
+			self.docs = docs; self.devicePrivateKeys = devicePrivateKeys; self.iaca = iaca; self.dauthMethod = dauthMethod
+			guard let openid4VPlink = String(data: qrCode, encoding: .utf8) else {
+				throw PresentationSession.makeError(str: "QR_DATA_MALFORMED")
+			}
+			self.openid4VPlink = openid4VPlink
+			self.openId4VpVerifierApiUri = openId4VpVerifierApiUri
+			self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
+			self.storageService = storageService
+		} else {
+			self.docs = [:]
+			self.dauthMethod = DeviceAuthMethod.deviceSignature
+			guard let openid4VPlink = String(data: qrCode, encoding: .utf8) else {
+				throw PresentationSession.makeError(str: "QR_DATA_MALFORMED")
+			}
+			self.openid4VPlink = openid4VPlink
+			self.openId4VpVerifierApiUri = openId4VpVerifierApiUri
+			self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
+			self.storageService = storageService
 		}
-		self.docs = docs; self.devicePrivateKeys = devicePrivateKeys; self.iaca = iaca; self.dauthMethod = dauthMethod
-		guard let openid4VPlink = String(data: qrCode, encoding: .utf8) else {
-			throw PresentationSession.makeError(str: "QR_DATA_MALFORMED")
-		}
-		self.openid4VPlink = openid4VPlink
-		self.openId4VpVerifierApiUri = openId4VpVerifierApiUri
-		self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
-        self.storageService = storageService
 	}
 	
 	public func startQrEngagement() async throws -> String? { nil }
 
-	// ToDo: This is implementation for temporarily test
-	public func getResolvedRequestData() async throws -> [String: Any] {
-		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") }
-		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
-		switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
-		case let .jwt(request: resolvedRequestData):
-			print("JWT: \(resolvedRequestData)") // Todo: temporarily
-		case .notSecured(data: _):
-			print("Not secured") // Todo: temporarily
+//	 ToDo: This is implementation for temporarily test
+	public func getResolvedRequestData() async throws -> String {
+		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else {
+			throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)")
 		}
-		return try resolvedRequestData.debugDescription.toDictionary()
+		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
+		do {
+			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
+			case let .jwt(request: resolvedRequestData):
+				switch resolvedRequestData {
+				case let .vpToken(vp):
+					let items = try Openid4VpUtils.parsePresentationDefinition(vp.presentationDefinition, logger: logger)
+					if let firstentity = items?.first {
+						let firstKey = firstentity.key
+						return firstKey
+					} else {
+						throw PresentationSession.makeError(str: "siopOpenId4Vp.authorize: No item found")
+					}
+				default: throw PresentationSession.makeError(str: "siopOpenId4Vp.authorize: Item is not vpToken")
+				}
+			default:
+				throw PresentationSession.makeError(str: "siopOpenId4Vp.authorize: Item is not jwt")
+			}
+		} catch {
+			throw PresentationSession.makeError(str: "getResolvedRequestData: error: \(error)")
+		}
   }
   
 	///  Receive request from an openid4vp URL
 	///
 	/// - Returns: The requested items.
 	public func receiveRequest() async throws -> [String: Any] {
-		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") }
+		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") } // Note: 目的のアイテムを得るためにはopenid4VPlinkが必須
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
 			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
 			case .notSecured(data: _):
@@ -105,7 +132,7 @@ public class OpenId4VpService: PresentationService {
 						responseUri: responseUri, nonce: vp.nonce, mdocGeneratedNonce: mdocGeneratedNonce)
 					logger.info("Session Transcript: \(sessionTranscript.encode().toHexString()), for clientId: \(vp.client.id), responseUri: \(responseUri), nonce: \(vp.nonce), mdocGeneratedNonce: \(mdocGeneratedNonce!)")
 					self.presentationDefinition = vp.presentationDefinition
-					let items = try Openid4VpUtils.parsePresentationDefinition(vp.presentationDefinition, logger: logger)
+					let items = try Openid4VpUtils.parsePresentationDefinition(vp.presentationDefinition, logger: logger)		// Note: これが目的のアイテム
 					guard let items else { throw PresentationSession.makeError(str: "Invalid presentation definition") }
 					var result: [String: Any] = [UserRequestKeys.valid_items_requested.rawValue: items]
 					if let ln = resolvedRequestData.legalName { result[UserRequestKeys.reader_legal_name.rawValue] = ln }
