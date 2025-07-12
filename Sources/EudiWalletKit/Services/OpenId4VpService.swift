@@ -49,12 +49,14 @@ public class OpenId4VpService: PresentationService {
 	var mdocGeneratedNonce: String!
 	var sessionTranscript: SessionTranscript!
 	var eReaderPub: CoseKey?
-    var storageService: any DataStorageService
+	var storageService: any DataStorageService
 	public var flow: FlowType
 
 	public init(parameters: [String: Any], qrCode: Data, openId4VpVerifierApiUri: String?, openId4VpVerifierLegalName: String?, _ storageService: any DataStorageService) throws {
+		print("debug: EudiwalletKit OpenVpService: init")
 		self.flow = .openid4vp(qrCode: qrCode)
 		if !parameters.isEmpty{
+			print("debug: EudiwalletKit OpenVpService: init: Not parameters.isEmpty")
 			guard let (docs, devicePrivateKeys, iaca, dauthMethod) = MdocHelpers.initializeData(parameters: parameters) else {
 				throw PresentationSession.makeError(str: "MDOC_DATA_NOT_AVAILABLE")
 			}
@@ -67,6 +69,7 @@ public class OpenId4VpService: PresentationService {
 			self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
 			self.storageService = storageService
 		} else {
+			print("debug: EudiwalletKit OpenVpService: init: parameters.isEmpty")
 			self.docs = [:]
 			self.dauthMethod = DeviceAuthMethod.deviceSignature
 			guard let openid4VPlink = String(data: qrCode, encoding: .utf8) else {
@@ -83,11 +86,14 @@ public class OpenId4VpService: PresentationService {
 
 //	 ToDo: This is implementation for temporarily test
 	public func getResolvedRequestData() async throws -> String {
+		print("debug: EudiwalletKit OpenVpService: getResolvedRequestData")
+		print("debug: EudiwalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
 		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else {
 			throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)")
 		}
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
 		do {
+			print("debug: EudiwalletKit OpenVpService: getResolvedRequestData: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
 			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
 			case let .jwt(request: resolvedRequestData):
 				switch resolvedRequestData {
@@ -113,8 +119,11 @@ public class OpenId4VpService: PresentationService {
 	///
 	/// - Returns: The requested items.
 	public func receiveRequest() async throws -> [String: Any] {
-		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") } // Note: 目的のアイテムを得るためにはopenid4VPlinkが必須
+		print("debug: EudiwalletKit OpenVpService: receiveRequest")
+		print("debug: EudiwalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
+		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") } // Note: openid4VPlink is required to get a target item
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
+		print("debug: EudiwalletKit OpenVpService: receiveRequest: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
 			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
 			case .notSecured(data: _):
 				throw PresentationSession.makeError(str: "Not secure request received.")
@@ -132,7 +141,7 @@ public class OpenId4VpService: PresentationService {
 						responseUri: responseUri, nonce: vp.nonce, mdocGeneratedNonce: mdocGeneratedNonce)
 					logger.info("Session Transcript: \(sessionTranscript.encode().toHexString()), for clientId: \(vp.client.id), responseUri: \(responseUri), nonce: \(vp.nonce), mdocGeneratedNonce: \(mdocGeneratedNonce!)")
 					self.presentationDefinition = vp.presentationDefinition
-					let items = try Openid4VpUtils.parsePresentationDefinition(vp.presentationDefinition, logger: logger)		// Note: これが目的のアイテム
+					let items = try Openid4VpUtils.parsePresentationDefinition(vp.presentationDefinition, logger: logger)		// Note: This is a target item
 					guard let items else { throw PresentationSession.makeError(str: "Invalid presentation definition") }
 					var result: [String: Any] = [UserRequestKeys.valid_items_requested.rawValue: items]
 					if let ln = resolvedRequestData.legalName { result[UserRequestKeys.reader_legal_name.rawValue] = ln }

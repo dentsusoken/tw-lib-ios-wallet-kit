@@ -221,14 +221,24 @@ public final class EudiWallet: ObservableObject {
 	///   - dataFormat: Exchanged data ``Format`` type
 	/// - Returns: A data dictionary that can be used to initialize a presentation service
 	public func prepareServiceDataParameters(docType: String? = nil, dataFormat: DataFormat = .cbor ) throws -> [String : Any] {
+		print("debug: EudiwalletKit EudiWallet: prepareServiceDataParameters")
 		var parameters: [String: Any]
 		switch dataFormat {
 		case .cbor:
-			guard var docs = try storageService.loadDocuments(), docs.count > 0 else { throw WalletError(description: "No documents found") }
+			guard var docs = try storageService.loadDocuments(), docs.count > 0 else {
+				print("debug: EudiwalletKit EudiWallet: prepareServiceDataParameters: storageService.loadDocuments: No documents found")
+				throw WalletError(description: "No documents found")
+			}
 			if let docType { docs = docs.filter { $0.docType == docType} }
-			if let docType { guard docs.count > 0 else { throw WalletError(description: "No documents of type \(docType) found") } }
+			if let docType { guard docs.count > 0 else {
+				print("debug: EudiwalletKit EudiWallet: prepareServiceDataParameters: docType: No documents of type \(docType) found")
+				throw WalletError(description: "No documents of type \(docType) found")
+			}}
 			let cborsWithKeys = docs.compactMap { $0.getCborData() }
-			guard cborsWithKeys.count > 0 else { throw WalletError(description: "Documents decode error") }
+			guard cborsWithKeys.count > 0 else {
+				print("debug: EudiwalletKit EudiWallet: prepareServiceDataParameters: cborsWithKeys.count: Documents decode error")
+				throw WalletError(description: "Documents decode error")
+			}
 			parameters = [InitializeKeys.document_signup_issuer_signed_obj.rawValue: Dictionary(uniqueKeysWithValues: cborsWithKeys.map(\.iss)), InitializeKeys.device_private_key_obj.rawValue: Dictionary(uniqueKeysWithValues: cborsWithKeys.map(\.dpk))]
 			if let trustedReaderCertificates { parameters[InitializeKeys.trusted_certificates.rawValue] = trustedReaderCertificates }
 			parameters[InitializeKeys.device_auth_method.rawValue] = deviceAuthMethod.rawValue
@@ -239,16 +249,20 @@ public final class EudiWallet: ObservableObject {
 	}
 	// ToDo: Note: As a reference, use the method name resolveOfferUrlDocTypes which is for issuance
 	public func resolveRequestDocType(flow: FlowType) async -> String? {
+		print("debug: EudiwalletKit EudiWallet: resolveRequestDocType")
 		do {
 			switch flow {
 			case .openid4vp(let qrCode):
 				let openIdSvc = try OpenId4VpService(parameters: [:], qrCode: qrCode, openId4VpVerifierApiUri: self.verifierApiUri, openId4VpVerifierLegalName: self.verifierLegalName,self.storage.storageService)
+				print("debug: EudiwalletKit EudiWallet: resolveRequestDocType: success create OpenId4VpService instance")
 				var result = try await openIdSvc.getResolvedRequestData()
+				print("debug: EudiwalletKit EudiWallet: resolveRequestDocType: success openIdSvc.getResolvedRequestData")
 				return result
 			default:
 				return nil
 			}
 		} catch {
+			print("debug: EudiwalletKit EudiWallet: resolveRequestDocType: error")
 			print(error)
 			return nil
 		}
@@ -261,6 +275,7 @@ public final class EudiWallet: ObservableObject {
 	///   - dataFormat: Exchanged data ``Format`` type
 	/// - Returns: A presentation session instance,
 	public func beginPresentation(flow: FlowType, docType: String? = nil, dataFormat: DataFormat = .cbor) -> PresentationSession {
+		print("debug: EudiwalletKit EudiWallet: beginPresentation")
 		do {
 			let parameters = try prepareServiceDataParameters(docType: docType, dataFormat: dataFormat)
 			let docIdAndTypes = storage.getDocIdsToTypes()
@@ -270,11 +285,13 @@ public final class EudiWallet: ObservableObject {
 				return PresentationSession(presentationService: bleSvc, docIdAndTypes: docIdAndTypes, userAuthenticationRequired: userAuthenticationRequired)
 			case .openid4vp(let qrCode):
                 let openIdSvc = try OpenId4VpService(parameters: parameters, qrCode: qrCode, openId4VpVerifierApiUri: self.verifierApiUri, openId4VpVerifierLegalName: self.verifierLegalName,self.storage.storageService)
+				print("debug: EudiwalletKit EudiWallet: beginPresentation: success")
 				return PresentationSession(presentationService: openIdSvc, docIdAndTypes: docIdAndTypes, userAuthenticationRequired: userAuthenticationRequired)
 			default:
 				return PresentationSession(presentationService: FaultPresentationService(error: PresentationSession.makeError(str: "Use beginPresentation(service:)")), docIdAndTypes: docIdAndTypes, userAuthenticationRequired: false)
 			}
 		} catch {
+      print("debug: EudiwalletKit EudiWallet: beginPresentation: error")
 			return PresentationSession(presentationService: FaultPresentationService(error: error), docIdAndTypes: [:], userAuthenticationRequired: false)
 		}
 	}
