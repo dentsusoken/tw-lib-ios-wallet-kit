@@ -50,6 +50,7 @@ public class PresentationSession: ObservableObject {
 	var userAuthenticationRequired: Bool
 	
 	public init(presentationService: any PresentationService, docIdAndTypes: [String: String], userAuthenticationRequired: Bool) {
+    print("debug: WalletKit PresentationSession: init")
 		self.presentationService = presentationService
 		self.docIdAndTypes = docIdAndTypes
 		self.userAuthenticationRequired = userAuthenticationRequired
@@ -61,6 +62,7 @@ public class PresentationSession: ObservableObject {
 	/// The ``disclosedDocuments`` property will be set. Additionally ``readerCertIssuer`` and ``readerCertValidationMessage`` may be set
 	/// - Parameter request: Keys are defined in the ``UserRequestKeys``
 	func decodeRequest(_ request: [String: Any]) throws {
+    print("debug: WalletKit PresentationSession: decodeRequest")
 		guard docIdAndTypes.count > 0 else { throw Self.makeError(str: "No documents added to session ")}
 		// show the items as checkboxes
 		guard let validRequestItems = request[UserRequestKeys.valid_items_requested.rawValue] as? RequestItems else { return }
@@ -97,6 +99,7 @@ public class PresentationSession: ObservableObject {
 	/// On success ``deviceEngagement`` published variable will be set with the result and ``status`` will be ``.qrEngagementReady``
 	/// On error ``uiError`` will be filled and ``status`` will be ``.error``
 	public func startQrEngagement() async {
+    print("debug: WalletKit PresentationSession: startQrEngagement")
 		do {
 			if let data = try await presentationService.startQrEngagement() {
 				await MainActor.run {
@@ -120,6 +123,7 @@ public class PresentationSession: ObservableObject {
 	/// On error ``uiError`` will be filled and ``status`` will be ``.error``
 	/// - Returns: A request dictionary keyed by ``MdocDataTransfer.UserRequestKeys``
 	public func receiveRequest() async -> [String: Any]? {
+    print("debug: WalletKit PresentationSession: receiveRequest")
 		do {
 			let request = try await presentationService.receiveRequest()
 			try await decodeRequest(request)
@@ -136,6 +140,7 @@ public class PresentationSession: ObservableObject {
 	///   - itemsToSend: Data to send organized into a hierarcy of doc.types and namespaces
 	///   - onCancel: Action to perform if the user cancels the biometric authentication
 	public func sendResponse(userAccepted: Bool, itemsToSend: RequestItems, onCancel: (() -> Void)? = nil, onSuccess: ((URL?) -> Void)? = nil) async {
+    print("debug: WalletKit PresentationSession: sendResponse")
 		do {
 			await MainActor.run {status = .userSelected }
 			let action = { [ weak self] in _ = try await self?.presentationService.sendResponse(userAccepted: userAccepted, itemsToSend: itemsToSend, onSuccess: onSuccess) }

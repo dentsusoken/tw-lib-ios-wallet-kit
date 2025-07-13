@@ -53,10 +53,9 @@ public class OpenId4VpService: PresentationService {
 	public var flow: FlowType
 
 	public init(parameters: [String: Any], qrCode: Data, openId4VpVerifierApiUri: String?, openId4VpVerifierLegalName: String?, _ storageService: any DataStorageService) throws {
-		print("debug: EudiwalletKit OpenVpService: init")
+		print("debug: WalletKit OpenVpService: init")
 		self.flow = .openid4vp(qrCode: qrCode)
 		if !parameters.isEmpty{
-			print("debug: EudiwalletKit OpenVpService: init: Not parameters.isEmpty")
 			guard let (docs, devicePrivateKeys, iaca, dauthMethod) = MdocHelpers.initializeData(parameters: parameters) else {
 				throw PresentationSession.makeError(str: "MDOC_DATA_NOT_AVAILABLE")
 			}
@@ -69,7 +68,7 @@ public class OpenId4VpService: PresentationService {
 			self.openId4VpVerifierLegalName = openId4VpVerifierLegalName
 			self.storageService = storageService
 		} else {
-			print("debug: EudiwalletKit OpenVpService: init: parameters.isEmpty")
+			print("debug: WalletKit OpenVpService: init: parameters.isEmpty")
 			self.docs = [:]
 			self.dauthMethod = DeviceAuthMethod.deviceSignature
 			guard let openid4VPlink = String(data: qrCode, encoding: .utf8) else {
@@ -84,16 +83,16 @@ public class OpenId4VpService: PresentationService {
 	
 	public func startQrEngagement() async throws -> String? { nil }
 
-//	 ToDo: This is implementation for temporarily test
+
 	public func getResolvedRequestData() async throws -> String {
-		print("debug: EudiwalletKit OpenVpService: getResolvedRequestData")
-		print("debug: EudiwalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
+		print("debug: WalletKit OpenVpService: getResolvedRequestData")
+		print("debug: WalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
 		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else {
 			throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)")
 		}
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
 		do {
-			print("debug: EudiwalletKit OpenVpService: getResolvedRequestData: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
+			print("debug: WalletKit OpenVpService: getResolvedRequestData: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
 			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
 			case let .jwt(request: resolvedRequestData):
 				switch resolvedRequestData {
@@ -119,11 +118,12 @@ public class OpenId4VpService: PresentationService {
 	///
 	/// - Returns: The requested items.
 	public func receiveRequest() async throws -> [String: Any] {
-		print("debug: EudiwalletKit OpenVpService: receiveRequest")
-		print("debug: EudiwalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
-		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else { throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") } // Note: openid4VPlink is required to get a target item
+		print("debug: WalletKit OpenVpService: receiveRequest")
+		print("debug: WalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
+		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else {
+			throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)") } // Note: openid4VPlink is required to get a target item
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
-		print("debug: EudiwalletKit OpenVpService: receiveRequest: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
+		print("debug: WalletKit OpenVpService: receiveRequest: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
 			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
 			case .notSecured(data: _):
 				throw PresentationSession.makeError(str: "Not secure request received.")
