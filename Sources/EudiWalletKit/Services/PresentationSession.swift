@@ -50,7 +50,7 @@ public class PresentationSession: ObservableObject {
 	var userAuthenticationRequired: Bool
 	
 	public init(presentationService: any PresentationService, docIdAndTypes: [String: String], userAuthenticationRequired: Bool) {
-    print("debug: WalletKit PresentationSession: init")
+		print("debug: WalletKit PresentationSession: init")
 		self.presentationService = presentationService
 		self.docIdAndTypes = docIdAndTypes
 		self.userAuthenticationRequired = userAuthenticationRequired

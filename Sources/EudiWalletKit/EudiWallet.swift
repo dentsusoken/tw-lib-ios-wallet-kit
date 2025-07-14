@@ -291,7 +291,7 @@ public final class EudiWallet: ObservableObject {
 				return PresentationSession(presentationService: FaultPresentationService(error: PresentationSession.makeError(str: "Use beginPresentation(service:)")), docIdAndTypes: docIdAndTypes, userAuthenticationRequired: false)
 			}
 		} catch {
-      print("debug: WalletKit EudiWallet: beginPresentation: error")
+			print("debug: WalletKit EudiWallet: beginPresentation: error")
 			return PresentationSession(presentationService: FaultPresentationService(error: error), docIdAndTypes: [:], userAuthenticationRequired: false)
 		}
 	}

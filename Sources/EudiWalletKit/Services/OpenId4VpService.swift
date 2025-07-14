@@ -88,12 +88,13 @@ public class OpenId4VpService: PresentationService {
 		print("debug: WalletKit OpenVpService: getResolvedRequestData")
 		print("debug: WalletKit OpenVpService: Instance ID:", ObjectIdentifier(self))
 		guard status != .error, let openid4VPURI = URL(string: openid4VPlink) else {
+			print("debug: WalletKit OpenVpService: getResolvedRequestData: Invalid link \(openid4VPlink)")
 			throw PresentationSession.makeError(str: "Invalid link \(openid4VPlink)")
 		}
 		siopOpenId4Vp = SiopOpenID4VP(walletConfiguration: getWalletConf(verifierApiUrl: openId4VpVerifierApiUri, verifierLegalName: openId4VpVerifierLegalName))
 		do {
 			print("debug: WalletKit OpenVpService: getResolvedRequestData: siopOpenId4Vp.authorize(url: \(openid4VPURI))")
-			switch try await siopOpenId4Vp.authorize(url: openid4VPURI)  {
+			switch try await siopOpenId4Vp.authorize(url: openid4VPURI) {
 			case let .jwt(request: resolvedRequestData):
 				switch resolvedRequestData {
 				case let .vpToken(vp):
@@ -113,7 +114,7 @@ public class OpenId4VpService: PresentationService {
 			throw PresentationSession.makeError(str: "getResolvedRequestData: error: \(error)")
 		}
   }
-  
+
 	///  Receive request from an openid4vp URL
 	///
 	/// - Returns: The requested items.
